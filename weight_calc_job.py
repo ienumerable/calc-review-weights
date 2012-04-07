@@ -43,7 +43,7 @@ class ReviewerWeightCalc(MRJob):
       if self._my_hash[guid] == their_relative_score:
         yield (user, 1)
       elif ReviewerWeightCalc.is_mismatch(self._my_hash[guid], 
-                                       their_relative_score):
+                                          their_relative_score):
         yield (user, -1)
 
   def combiner(self, user, weights):
