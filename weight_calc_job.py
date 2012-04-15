@@ -2,6 +2,10 @@
 """
 from mrjob.job import MRJob
 
+
+class R_Score:
+  Like, Neutral, Dislike = xrange(3)
+
 class ReviewerWeightCalc(MRJob):
   
   #my_hash keys are business guids, values are R_Scores
@@ -9,27 +13,24 @@ class ReviewerWeightCalc(MRJob):
     super(ReviewerWeightCalc, self).__init__(*args, **kwargs)
     #TODO: self._my_hash = my_hash
     self._my_hash = {
-                      "biz1234" : "Dislike",
-                      "biz1444" : "Like",
-                      "biz4444" : "Neutral"
+                      "biz1234" : 1,
+                      "biz1444" : 4,
+                      "biz4444" : 3
                     }
 
-  #For now we use strings, ints might be faster:
-  #class R_Scores:
-  #  Like, Neutral, Dislike = range(3)
   @staticmethod
   def rel_score(score):
     if score >= 4:
-      return "Like"
+      return R_Score.Like
     elif score == 3:
-      return "Neutral"
+      return R_Score.Neutral
     else:
-      return "Dislike"
+      return R_Score.Dislike
 
   @staticmethod
   def is_mismatch(score1, score2):
-    if( (score1 == "Like" and score2 == "Dislike") or
-      (score1 == "Dislike" and score2 == "Like")):
+    #Like = 0, Dislike = 2
+    if abs(score1-score2) == 2:
       return True
     else:
       return False
@@ -40,9 +41,10 @@ class ReviewerWeightCalc(MRJob):
     (user, guid, score) = row.split(" ")
     if guid in self._my_hash:
       their_relative_score = ReviewerWeightCalc.rel_score(int(score))
-      if self._my_hash[guid] == their_relative_score:
+      my_score = ReviewerWeightCalc.rel_score(self._my_hash[guid])
+      if my_score == their_relative_score:
         yield (user, 1)
-      elif ReviewerWeightCalc.is_mismatch(self._my_hash[guid], 
+      elif ReviewerWeightCalc.is_mismatch(my_score, 
                                           their_relative_score):
         yield (user, -1)
 
